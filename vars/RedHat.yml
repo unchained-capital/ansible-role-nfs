@@ -1,2 +1,7 @@
 ---
-nfs_server_daemon: nfs
+nfsd_server_daemon: nfs
+
+nfs_packages:
+  - nfs-utils
+  
+idmapd_daemon: nfs-idmap

@@ -1,2 +1,19 @@
 ---
-nfs_exports: []
+nfsd_server:     false
+nfsd_exports:    []
+nfsd_export_acl: "*"
+
+nfsd_exports_dir: /exports
+
+rpcbind_port: 111
+mountd_port: ~                  # Set this (to 2048, for example) to force mountd to use a single port (useful for firewalls)
+nfsd_port: 2049
+
+nfsd_flags: "--port {{ nfsd_port }}"
+nfsd_process_count: 8
+nfsd_nice_value: 0
+
+nfsd_mountd_flags: "--manage-gids{% if mountd_port %} --port {{ mountd_port }}{% else %}{% endif %}"
+
+nfsd_need_gssd: false
+nfsd_need_svcgssd: false

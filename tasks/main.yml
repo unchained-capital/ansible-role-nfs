@@ -1,42 +1,105 @@
 ---
-# Include variables and define needed variables.
+
+#
+# Variables
+#
+
 - name: Include OS-specific variables.
+  tags: [nfs, nfsd]
   include_vars: "{{ ansible_os_family }}.yml"
 
 - name: Include overrides specific to RHEL 7.
+  tags: [nfs, nfsd]
   include_vars: RedHat-7.yml
   when: ansible_os_family == 'RedHat' and ansible_distribution_major_version == "7"
 
 - name: Include overrides specific to Fedora.
+  tags: [nfs, nfsd]
   include_vars: Fedora.yml
   when: ansible_os_family == 'RedHat' and ansible_distribution == "Fedora"
 
-# Setup/install tasks.
-- include: setup-RedHat.yml
+#
+# Package installation
+#
+  
+- name: Ensure NFS client packages are installed | Debian
+  tags: [nfs]
+  when: ansible_os_family == 'Debian'
+  apt: name="{{ item }}" state=present
+  with_items: "{{ nfs_packages }}"
+
+- name: Ensure NFS server packages are installed | Debian
+  tags: [nfsd]
+  when: ansible_os_family == 'Debian' and nfsd_server
+  apt: name="{{ item }}" state=present
+  with_items: "{{ nfsd_packages }}"
+
+- name: Ensure NFS packages are installed | RedHat
+  tags: [nfs, nfsd]
+  when: ansible_os_family == 'RedHat'
+  package: name="{{ item }}" state=present
+  with_items: "{{ nfsd_packages }}"
+  
+#
+# Configuration
+#
+
+- include: config-Debian.yml
+  tags: [nfs, nfsd, config]
+  when: ansible_os_family == 'Debian'
+  
+- include: config-RedHat.yml
+  tags: [nfs, nfsd, config]
   when: ansible_os_family == 'RedHat'
 
-- include: setup-Debian.yml
-  when: ansible_os_family == 'Debian'
+#
+# Exports management
+#
+  
+- include: server.yml
+  tags: [nfsd]
+  when: nfsd_server
 
-- name: Ensure directories to export exist
-  file: 'path="{{ item.strip().split()[0] }}" state=directory'
-  with_items: "{{ nfs_exports }}"
-  notify: restart nfs
+#
+# Services
+#
 
-- name: Copy exports file.
-  template:
-    src: exports.j2
-    dest: /etc/exports
-    owner: root
-    group: root
-    mode: 0644
-  register: nfs_exports_copy
-  notify: restart nfs
+# rpcbind  
 
-- name: Restart NFS immediately if exports are updated.
-  service: "name={{ nfs_server_daemon }} state=restarted"
-  when: nfs_exports_copy.changed
+- name: Ensure rpcbind is running and enabled
+  tags: [nfs, nfsd, rpcbind]
+  service: name=rpcbind state=started enabled=yes
 
-- name: Ensure nfs is running.
-  service: "name={{ nfs_server_daemon }} state=started enabled=yes"
-  when: nfs_exports|length
+# statd
+
+- name: Ensure statd is not running and disabled
+  tags: [nfs, nfsd, statd]
+  when: ansible_os_family == "Debian" # FIXME: what about RHEL?
+  service: name=statd state=stopped enabled=no
+
+# idmapd
+
+- name: Ensure idmapd is not running and disabled
+  tags: [nfs, nfsd, idampd]
+  service: name="{{ idmapd_daemon }}" state=stopped enabled=no
+
+# gssd  
+
+- name: Ensure gssd is running and enabled
+  tags: [nfs, nfsd, gssd]
+  when: ansible_os_family == "Debian" and nfsd_need_gssd # FIXME: what about RHEL?
+  service: name=gssd state=started enabled=yes
+
+- name: Ensure gssd is not running and disabled
+  when: ansible_os_family == "Debian" and not nfsd_need_gssd
+  tags: [nfs, nfsd, gssd]
+  service: name=gssd state=stopped enabled=no
+
+# nfsd  
+  
+- name: Ensure nfsd is running and enabled
+  tags: [nfsd]
+  when: nfsd_server
+  service: name="{{ nfsd_server_daemon }}" state=started enabled=yes
+
+# FIXME what about svcgssd?

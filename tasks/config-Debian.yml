@@ -1,0 +1,56 @@
+---
+
+- name: Ensure nfs-common defaults are correct | Debian
+  lineinfile: dest=/etc/default/nfs-common state=present regexp="{{ item.regexp }}" line="{{ item.line }}"
+  register: nfs_client_config
+  with_items:
+    # statd
+    - regexp:    '^NEED_STATD='
+      line:      'NEED_STATD=no'
+    - regexp:    '^STATDOPTS='
+      line:      'STATDOPTS='
+    # idmapd
+    - regexp:    '^NEED_IDMAPD='
+      line:      'NEED_IDMAPD=no'
+    # gssd
+    - regexp:    '^NEED_GSSD='
+      line:      'NEED_GSSD={% if nfsd_need_gssd %}yes{% else %}no{% endif %}'
+
+- name: Restart NFS server if needed
+  when: "{{ nfs_client_config.changed and nfsd_server}}"
+  service: name="{{ nfsd_server_daemon }}" state=restart
+
+- name: Ensure nfs-kernel-server defaults are correct | Debian
+  when: nfsd_server
+  lineinfile: dest=/etc/default/nfs-kernel-server state=present regexp="{{ item.regexp }}" line="{{ item.line }}"
+  notify: restart nfs
+  with_items:
+    
+    #
+    # nfsd
+    #
+
+    # Command-line flags
+    - regexp:    '^RPCNFSDOPTS='
+      line:      'RPCNFSDOPTS="{{ nfsd_flags }}"'
+
+    # Thread count
+    - regexp:    '^RPCNFSDCOUNT='
+      line:      'RPCNFSDCOUNT={{ nfsd_process_count }}'
+
+    # Priority
+    - regexp:    '^RPCNFSDPRIORITY='
+      line:      'RPCNFSDPRIORITY={{ nfsd_nice_value }}'
+
+    #
+    # mountd
+    #
+      
+    - regexp:    '^RPCMOUNTDOPTS='
+      line:      'RPCMOUNTDOPTS="{{ nfsd_mountd_flags }}"'
+      
+    #
+    # Other
+    #
+    - regexp: '^NEED_SVCGSSD='
+      line:   'NEED_SVCGSSD={% if nfsd_need_svcgssd %}yes{% else %}no{% endif %}'

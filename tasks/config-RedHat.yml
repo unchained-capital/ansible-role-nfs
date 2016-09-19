@@ -1,0 +1,35 @@
+---
+
+- name: Ensure nfs defaults are correct | RedHat
+  when: nfsd_server
+  lineinfile: dest=/etc/sysconfig/nfs state=present regexp="{{ item.regexp }}" line="{{ item.line }}"
+  notify: restart nfs
+  with_items:
+    
+    #
+    # nfsd
+    #
+
+    # Command-line flags
+    - regexp:    '^RPCNFSDARGS='
+      line:      'RPCNFSDARGS="{{ nfsd_flags }}"'
+
+    # Thread count
+    - regexp:    '^RPCNFSDCOUNT='
+      line:      'RPCNFSDCOUNT={{ nfsd_process_count }}'
+
+    #
+    # mountd
+    #
+
+    - regexp: '^MOUNTD_NFS_V2='
+      line:   'MOUNTD_NFS_V2=no'
+      
+    - regexp: '^MOUNTD_NFS_V3='
+      line:   'MOUNTD_NFS_V3=no'
+      
+- name: Ensure mountd port is set if needed | RedHat
+  when: nfsd_server
+  when: mountd_port
+  lineinfile: dest=/etc/sysconfig/nfs state=present regexp="^MOUNTD_PORT=" line="MOUNTD_PORT={{ mountd_port }}"
+  notify: restart nfs

@@ -1,2 +1,10 @@
 ---
-nfs_server_daemon: nfs-kernel-server
+nfsd_server_daemon: nfs-kernel-server
+
+nfsd_packages:
+  - nfs-kernel-server
+
+nfs_packages:
+  - nfs-common
+
+idmapd_daemon: idmapd

@@ -1,13 +1,13 @@
+# {{ ansible_managed }}
+#
 # /etc/exports: the access control list for filesystems which may be exported
 #   to NFS clients.  See exports(5).
-#
-# Example for NFSv2 and NFSv3:
-# /srv/homes       hostname1(rw,sync,no_subtree_check) hostname2(ro,sync,no_subtree_check)
 #
 # Example for NFSv4:
 # /srv/nfs4        gss/krb5i(rw,sync,fsid=0,crossmnt,no_subtree_check)
 # /srv/nfs4/homes  gss/krb5i(rw,sync,no_subtree_check)
 #
-{% for export in nfs_exports %}
-{{ export }}
+{{ nfsd_exports_dir }} {{ nfsd_acl }}(ro,no_subtree_check,fsid=0,crossmnt)
+{% for export in nfsd_exports %}
+{{ nfsd_exports_dir }}/{{ export.path | basename }} {{ export.acl | default(nfsd_export_acl) }}({{ export.options }}){% if export.allow_localhost %} 127.0.0.1({{ export.options }}){% endif %}
 {% endfor %}
