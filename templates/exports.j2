@@ -7,7 +7,9 @@
 # /srv/nfs4        gss/krb5i(rw,sync,fsid=0,crossmnt,no_subtree_check)
 # /srv/nfs4/homes  gss/krb5i(rw,sync,no_subtree_check)
 #
-{{ nfsd_exports_dir }} {{ nfsd_acl }}(ro,no_subtree_check,fsid=0,crossmnt)
+{{ nfsd_exports_dir }} {{ nfsd_export_acl }}(ro,no_subtree_check,fsid=0,crossmnt){% if nfsd_exports | selectattr("allow_localhost") | list | length %} 127.0.0.1(ro,no_subtree_check,fsid=0,crossmnt){% endif %}
+
 {% for export in nfsd_exports %}
 {{ nfsd_exports_dir }}/{{ export.path | basename }} {{ export.acl | default(nfsd_export_acl) }}({{ export.options }}){% if export.allow_localhost %} 127.0.0.1({{ export.options }}){% endif %}
+  
 {% endfor %}

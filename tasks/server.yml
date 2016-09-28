@@ -37,6 +37,6 @@
 #
 # Configure /etc/exports
 #
-- name: Ensure export is defined for each export
+- name: Ensure exports configuration file is correct
   template: src=templates/exports.j2 dest=/etc/exports owner=root group=root mode=0644
   notify: restart nfs
