@@ -18,7 +18,7 @@
 
 - name: Restart NFS server if needed
   when: "{{ nfs_client_config.changed and nfsd_server}}"
-  service: name="{{ nfsd_server_daemon }}" state=restart
+  service: name="{{ nfsd_server_daemon }}" state=restarted
 
 - name: Ensure nfs-kernel-server defaults are correct | Debian
   when: nfsd_server

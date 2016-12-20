@@ -29,7 +29,6 @@
       line:   'MOUNTD_NFS_V3=no'
       
 - name: Ensure mountd port is set if needed | RedHat
-  when: nfsd_server
-  when: mountd_port
+  when: nfsd_server and mountd_port
   lineinfile: dest=/etc/sysconfig/nfs state=present regexp="^MOUNTD_PORT=" line="MOUNTD_PORT={{ mountd_port }}"
   notify: restart nfs
